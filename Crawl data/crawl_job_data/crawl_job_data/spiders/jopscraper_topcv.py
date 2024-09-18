@@ -13,7 +13,7 @@ from csv import writer
 
 class JobScraper(CrawlSpider):
   name = 'jobs_topcv'
-  start_urls = [f"https://www.topcv.vn/viec-lam-it?page={i}" for i in range(1,64)]
+  start_urls = [f"https://www.topcv.vn/viec-lam-it?page={i}" for i in range(30,64)]
 
 
   rules = (
