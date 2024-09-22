@@ -1,10 +1,17 @@
-import pandas as pd
-import gensim
 import nltk
+from nltk.corpus import stopwords
 from gensim.utils import simple_preprocess
+from gensim.models import Phrases
+from gensim.models.phrases import Phraser
+import gensim
+import pandas as pd
+import spacy
 
 # download stop word
 nltk.download('stopwords')
+
+# Define stop words
+stop_words = set(stopwords.words('english'))
 
 # Đọc dữ liệu từ file CSV
 df = pd.read_csv("data.csv")
@@ -30,6 +37,7 @@ trigram_mod = gensim.models.phrases.Phraser(trigram)  # Chuyển đổi thành P
 # Xem ví dụ trigram
 # print(trigram_mod[bigram_mod[data_words[0]]])
 
-# function for stopwords, bigrams, trigrams and lemmatization
+# Function to remove stopwords
 def remove_stopwords(texts):
-  return [[word for word in simple_preprocess(str)]]
+    return [[word for word in simple_preprocess(str(doc)) if word not in stop_words] for doc in texts]
+
