@@ -1,10 +1,15 @@
-import gensim
-from gensim import corpora
-from gensim.models.ldamodel import LdaModel
+from flask import Flask, request, jsonify
+import requests
+import pdfplumber
+import io
+import string
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
-import string
 from nltk.stem import WordNetLemmatizer
+from gensim import corpora
+from gensim.models.ldamodel import LdaModel
+
+app = Flask(__name__)
 
 # Danh sách các từ cần loại bỏ thêm
 unwanted_phrases = {
@@ -27,18 +32,13 @@ unwanted_phrases = {
 stop_words = set(stopwords.words('english'))
 stop_words.update(unwanted_phrases)
 
-# In ra stop_words để kiểm tra các từ đã được thêm chưa
-print("Stop words set:")
-print(stop_words)
-
 # Khởi tạo lemmatizer
 lemmatizer = WordNetLemmatizer()
 
-# Hàm xử lý văn bản đã cập nhật với lemmatization
+# Hàm xử lý văn bản
 def preprocess(text):
     tokens = word_tokenize(text.lower())
     tokens = [word for word in tokens if word not in string.punctuation]
-    # Lọc từ stop words
     tokens = [lemmatizer.lemmatize(word) for word in tokens if word not in stop_words]
     return tokens
 
@@ -52,7 +52,6 @@ def extract_keywords(text, lda_model, dictionary, num_keywords=10):
     for topic_id, topic_prob in sorted(topics, key=lambda x: -x[1])[:num_keywords]:
         top_words = lda_model.show_topic(topic_id, topn=num_keywords)
         for word, prob in top_words:
-            # Chỉ thêm từ nếu nó không thuộc stop_words và không thuộc unwanted_phrases
             if len(word) > 3 and word not in stop_words:
                 keywords.add(word)
 
@@ -66,12 +65,36 @@ id2word_path = "C:\\Users\\PC\\Desktop\\Models\\model_lda_100.model.id2word"
 lda_model = LdaModel.load(lda_model_path)
 dictionary = corpora.Dictionary.load(id2word_path)
 
-# Đoạn văn bản cần trích xuất từ khóa
-text = ("Proficient in Java programming with a understanding of OOP, data structures, and algorithms. Knowledge of Spring Framework(Spring Boot, Spring MVC, SpringData JPA), Hibernate ORM. Web Development: Servlets, JSP, Thymeleaf. Basic knowledge of HTML, CSS, Javascript, JQuery. Databases: SQL Server, MySQL. Also have knowledge about Python datamining, C# .Net Framework.")
+@app.route('/extract-skills', methods=['POST'])
+def extract_skills():
+    # Nhận URL từ yêu cầu JSON
+    data = request.json
+    pdf_url = data.get('url')
 
-# Trích xuất từ khóa
-keywords = extract_keywords(text, lda_model, dictionary)
+    if not pdf_url:
+        return jsonify({"error": "URL không hợp lệ"}), 400
 
-print("Keywords extracted:")
-for keyword in keywords:
-    print(f"- {keyword}")
+    try:
+        # Gửi yêu cầu tải file PDF từ URL
+        response = requests.get(pdf_url)
+
+        if response.status_code != 200:
+            return jsonify({"error": f"Không thể tải file PDF, mã lỗi: {response.status_code}"}), 400
+
+        # Đọc nội dung từ PDF
+        with pdfplumber.open(io.BytesIO(response.content)) as pdf:
+            text = ""
+            for page in pdf.pages:
+                text += page.extract_text() + "\n"
+
+        # Trích xuất từ khóa
+        keywords = extract_keywords(text, lda_model, dictionary)
+
+        return jsonify({"skills": keywords})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+if __name__ == '__main__':
+    app.run(debug=True)

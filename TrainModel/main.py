@@ -56,7 +56,9 @@ skills_list = [
     'firebase', 'redis', 'spring', 'django', 'flask', 'rails',
     'web scraping', 'api development', 'unit testing', 'agile',
     'scrum', 'devops', 'teamwork', 'communication', 'problem solving',
-    'time management', 'project management', 'critical thinking'
+    'time management', 'project management', 'critical thinking',
+    'tensorflow', 'pytorch', 'vuejs', 'angularjs', 'bootstrap', 'spring boot',
+    'spring dataJpa', 'spring mvc'
 ]
 
 matcher = PhraseMatcher(spacy_nlp.vocab)
